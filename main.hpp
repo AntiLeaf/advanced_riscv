@@ -3,8 +3,6 @@
 
 #include "tools.hpp"
 
-#include <cstdio>
-
 enum op_t {
 	N, R, I, S, B, U, J
 };
@@ -63,80 +61,6 @@ bool is_branch(op_type o) {
 	return o == JALR || o == BEQ || o == BNE || o == BLT || o == BGE || o == BLTU || o == BGEU || o == JAL;
 }
 
-void check(op_type x) {
-	return;
-	if (x == ADD)
-		printf("ADD\n");
-	if (x == SUB)
-		printf("SUB\n");
-	if (x == SLL)
-		printf("SLT\n");
-	if (x == SLTU)
-		printf("SLTU\n");
-	if (x == XOR)
-		printf("XOR\n");
-	if (x == SRL)
-		printf("SRA\n");
-	if (x == OR)
-		printf("OR\n");
-	if (x == AND)
-		printf("AND\n");
-	if (x == JALR)
-		printf("JALR\n");
-	if (x == LB)
-		printf("LB\n");
-	if (x == LH)
-		printf("LH\n");
-	if (x == LW)
-		printf("LW\n");
-	if (x == LBU)
-		printf("LBU\n");
-	if (x == LHU)
-		printf("LHU\n");
-	if (x == ADDI)
-		printf("ADDI\n");
-	if (x == SLTI)
-		printf("SLTI\n");
-	if (x == SLTIU)
-		printf("SLTIU\n");
-	if (x == XORI)
-		printf("XORI\n");
-	if (x == ORI)
-		printf("ORI\n");
-	if (x == ANDI)
-		printf("ANDI\n");
-	if (x == SLLI)
-		printf("SLLI\n");
-	if (x == SRLI)
-		printf("SRLI\n");
-	if (x == SRAI)
-		printf("SRAI\n");
-	if (x == SB)
-		printf("SB\n");
-	if (x == SH)
-		printf("SH\n");
-	if (x == SW)
-		printf("SW\n");
-	if (x == BEQ)
-		printf("BEQ\n");
-	if (x == BNE)
-		printf("BNE\n");
-	if (x == BLT)
-		printf("BLT\n");
-	if (x == BGE)
-		printf("BGE\n");
-	if (x == BLTU)
-		printf("BLTU\n");
-	if (x == BGEU)
-		printf("BGEU\n");
-	if (x == LUI)
-		printf("LUI\n");
-	if (x == AUIPC)
-		printf("AUIPC\n");
-	if (x == JAL)
-		printf("JAL\n");
-}
-
 void Node::work_IF() { // 指令提取
 
 	// 如果EX中刚运行完的分支指令判定为跳转，就说明现在的ID/IF寄存器中的指令是错的，需要退掉换成正确的指令
@@ -149,12 +73,9 @@ void Node::work_IF() { // 指令提取
 	}
 
 	if (if_id.ir) {
-		// printf("if passed (if_id is full)\n");
 		locks++;
 		return;
 	}
-
-	// printf("pc = 0x%x\n", pc);
 
 	if_id.ir = read_32(RAM + pc);
 
@@ -163,14 +84,6 @@ void Node::work_IF() { // 指令提取
 
 bool Node::work_ID() { // 指令译码/寄存器提取
 	if (!if_id.ir || id_ex.ir || ex_mem.cond) {
-		/*printf("id passed");
-		if (!if_id.ir)
-			printf(" (no input)");
-		if (id_ex.ir)
-			printf(" (id_ex is full)");
-		if (ex_mem.cond)
-			printf(" (jumped)");
-			printf("\n");*/
 		locks++;
 		return false;
 	}
@@ -183,7 +96,6 @@ bool Node::work_ID() { // 指令译码/寄存器提取
 	int rs1 = get_rs1(command), rs2 = get_rs2(command);
 	
 	if (lock[rs1] || lock[rs2]) {
-		// printf("id locked\n");
 		locks++;
 		return false;
 	}
@@ -341,13 +253,11 @@ bool Node::work_ID() { // 指令译码/寄存器提取
 	else if (id_ex.opcode == 0b1101111) { // J
 		id_ex.command_t = J;
 		id_ex.imm = get_inst_j(command);
-		// printf("command = 0x%x  imm = 0x%x\n", command, id_ex.imm);
 		id_ex.command_type = JAL;
 	}
 
 	id_ex.A = reg[rs1];
 	id_ex.B = reg[rs2];
-	// printf("rs1 = %d  rs2 = %d  rd = %d\n", get_rs1(if_id.ir), get_rs2(if_id.ir), get_rd(if_id.ir));
 
 	id_ex.ir = command;
 	id_ex.npc = if_id.npc;
@@ -368,12 +278,6 @@ bool Node::work_ID() { // 指令译码/寄存器提取
 void Node::work_EX() { // 执行/有效地址
 
 	if (!id_ex.ir || ex_mem.ir) {
-		/*printf("ex passed");
-		if (!id_ex.ir)
-			printf(" (no input)");
-		if (ex_mem.ir)
-			printf(" (ex_mem is full)");
-			printf("\n");*/
 		locks++;
 		return;
 	}
@@ -384,7 +288,6 @@ void Node::work_EX() { // 执行/有效地址
 	ex_mem.A = id_ex.A;
 	ex_mem.B = id_ex.B;
 	ex_mem.imm = id_ex.imm;
-	// ex_mem.npc = id_ex.npc;
 
 	ex_mem.cond = false;
 
@@ -422,8 +325,6 @@ void Node::work_EX() { // 执行/有效地址
 	}
 
 	else if (id_ex.command_t == I) {
-
-		// printf("imm = %d\n", id_ex.imm);
 
 		if (id_ex.command_type == JALR) {
 			ex_mem.ALUoutput = (id_ex.A + id_ex.imm) & -2;
@@ -493,8 +394,6 @@ void Node::work_EX() { // 执行/有效地址
 
 		else if (id_ex.command_type == BGEU)
 			ex_mem.cond = ((unsigned)id_ex.A >= (unsigned)id_ex.B);
-
-		// printf("A = %d  B = %d  cond = %d\n", id_ex.A, id_ex.B, (int)ex_mem.cond);
 	}
 
 	else if (id_ex.command_t == U) {
@@ -505,7 +404,6 @@ void Node::work_EX() { // 执行/有效地址
 	}
 
 	else if (id_ex.command_t == J) {
-		// printf("JAL!\n");
 		ex_mem.ALUoutput = id_ex.npc + id_ex.imm - 4;
 		ex_mem.imm = id_ex.npc;
 		ex_mem.cond = true;
@@ -518,12 +416,6 @@ void Node::work_EX() { // 执行/有效地址
 void Node::work_MEM() { // 存储器访问
 
 	if (!ex_mem.ir || mem_wb.ir) {
-		/*printf("mem passed");
-		if (!ex_mem.ir)
-			printf(" (no input)");
-		if (mem_wb.ir)
-			printf(" (mem_wb is full)");
-			printf("\n");*/
 		locks++;
 		return;
 	}
@@ -549,12 +441,9 @@ void Node::work_MEM() { // 存储器访问
 
 		else if (ex_mem.command_type == LHU)
 			mem_wb.lmd = read_u16(RAM + ex_mem.ALUoutput);
-		/*if (ex_mem.command_type == LW)
-		  printf("load!!! pc = 0x%x  address = 0x%x  value = %d\n", ex_mem.npc - 4, ex_mem.ALUoutput, mem_wb.lmd);*/
 	}
 
 	else if (ex_mem.command_t == S) {
-		// printf("store??? pc = 0x%x  address = 0x%x, value = %d\n", ex_mem.npc - 4, ex_mem.ALUoutput, ex_mem.B);
 		if (ex_mem.command_type == SB)
 			write_8(RAM + ex_mem.ALUoutput, ex_mem.B);
 
@@ -574,15 +463,12 @@ void Node::work_MEM() { // 存储器访问
 void Node::work_WB() { // 写回
 
 	if (!mem_wb.ir) {
-		// printf("wb passed\n");
 		locks++;
 		return;
 	}
 
 	int rd = get_rd(mem_wb.ir);
 	if (rd) {
-		// printf("WB pc = 0x%x\n", mem_wb.npc - 4);
-		// if (lock[rd]) return;
 		if (mem_wb.command_t == R) {
 			reg[rd] = mem_wb.ALUoutput;
 			lock[rd]--; // 解锁
@@ -593,7 +479,6 @@ void Node::work_WB() { // 写回
 			if (mem_wb.command_type == LB || mem_wb.command_type == LH || mem_wb.command_type == LW || mem_wb.command_type == LBU || mem_wb.command_type == LHU) {
 				reg[rd] = mem_wb.lmd;
 				lock[rd]--;
-				// printf("load!!! reg[rd] = %d\n", reg[rd]);
 			}
 
 			else if (mem_wb.command_type == JALR) {
@@ -612,7 +497,6 @@ void Node::work_WB() { // 写回
 			if (mem_wb.command_type == LUI) {
 				reg[rd] = mem_wb.imm;
 				lock[rd]--;
-				// printf("reg[rd] = %d\n", reg[rd]);
 			}
 
 			else if (mem_wb.command_type == AUIPC) {
