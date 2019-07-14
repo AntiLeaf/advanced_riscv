@@ -1,4 +1,6 @@
 project(code)
 set(CMAKE_CXX_FLAGS "-O2")
 cmake_minimum_required(VERSION 2.6)
-add_executable(code code.cpp)
+# add_executable(code code.cpp)
+aux_source_directory(. SRC_LIST)
+add_executable(code ${SRC_LIST})
