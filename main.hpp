@@ -3,6 +3,8 @@
 
 #include "tools.hpp"
 
+#include <cstdio>
+
 enum op_t {
 	N, R, I, S, B, U, J
 };
@@ -16,8 +18,6 @@ enum op_type {
 	LUI, AUIPC, // U
 	JAL // J
 };
-
-extern bool is_branch(op_type);
 
 struct Register {
 	int ir, npc, opcode, imm, A, B, ALUoutput, lmd;
@@ -49,16 +49,13 @@ public:
 
 };
 
-#include "main.hpp"
-#include <cstdio>
-
 Register if_id, id_ex, ex_mem, mem_wb;
 
 Node IF, ID, EX, MEM, WB;
 
 unsigned char RAM[0x20000];
 
-int reg[32], pc, lock[32], lock_RAM[0x20000];
+int reg[32], pc, lock[32];
 
 int locks;
 
@@ -67,7 +64,7 @@ bool is_branch(op_type o) {
 }
 
 void check(op_type x) {
-	// return;
+	return;
 	if (x == ADD)
 		printf("ADD\n");
 	if (x == SUB)
@@ -152,12 +149,12 @@ void Node::work_IF() { // 指令提取
 	}
 
 	if (if_id.ir) {
-		printf("if passed (if_id is full)\n");
+		// printf("if passed (if_id is full)\n");
 		locks++;
 		return;
 	}
 
-	printf("pc = 0x%x\n", pc);
+	// printf("pc = 0x%x\n", pc);
 
 	if_id.ir = read_32(RAM + pc);
 
@@ -166,14 +163,14 @@ void Node::work_IF() { // 指令提取
 
 bool Node::work_ID() { // 指令译码/寄存器提取
 	if (!if_id.ir || id_ex.ir || ex_mem.cond) {
-		printf("id passed");
+		/*printf("id passed");
 		if (!if_id.ir)
 			printf(" (no input)");
 		if (id_ex.ir)
 			printf(" (id_ex is full)");
 		if (ex_mem.cond)
 			printf(" (jumped)");
-		printf("\n");
+			printf("\n");*/
 		locks++;
 		return false;
 	}
@@ -186,7 +183,7 @@ bool Node::work_ID() { // 指令译码/寄存器提取
 	int rs1 = get_rs1(command), rs2 = get_rs2(command);
 	
 	if (lock[rs1] || lock[rs2]) {
-		printf("id locked\n");
+		// printf("id locked\n");
 		locks++;
 		return false;
 	}
@@ -344,13 +341,13 @@ bool Node::work_ID() { // 指令译码/寄存器提取
 	else if (id_ex.opcode == 0b1101111) { // J
 		id_ex.command_t = J;
 		id_ex.imm = get_inst_j(command);
-		printf("command = 0x%x  imm = 0x%x\n", command, id_ex.imm);
+		// printf("command = 0x%x  imm = 0x%x\n", command, id_ex.imm);
 		id_ex.command_type = JAL;
 	}
 
 	id_ex.A = reg[rs1];
-	id_ex.B = reg[rs1];
-	printf("rs1 = %d  rs2 = %d  rd = %d\n", get_rs1(if_id.ir), get_rs2(if_id.ir), get_rd(if_id.ir));
+	id_ex.B = reg[rs2];
+	// printf("rs1 = %d  rs2 = %d  rd = %d\n", get_rs1(if_id.ir), get_rs2(if_id.ir), get_rd(if_id.ir));
 
 	id_ex.ir = command;
 	id_ex.npc = if_id.npc;
@@ -371,12 +368,12 @@ bool Node::work_ID() { // 指令译码/寄存器提取
 void Node::work_EX() { // 执行/有效地址
 
 	if (!id_ex.ir || ex_mem.ir) {
-		printf("ex passed");
+		/*printf("ex passed");
 		if (!id_ex.ir)
 			printf(" (no input)");
 		if (ex_mem.ir)
 			printf(" (ex_mem is full)");
-		printf("\n");
+			printf("\n");*/
 		locks++;
 		return;
 	}
@@ -426,7 +423,7 @@ void Node::work_EX() { // 执行/有效地址
 
 	else if (id_ex.command_t == I) {
 
-		printf("imm = %d\n", id_ex.imm);
+		// printf("imm = %d\n", id_ex.imm);
 
 		if (id_ex.command_type == JALR) {
 			ex_mem.ALUoutput = (id_ex.A + id_ex.imm) & -2;
@@ -473,7 +470,6 @@ void Node::work_EX() { // 执行/有效地址
 	else if (id_ex.command_t == S) {
 		ex_mem.ALUoutput = id_ex.imm + id_ex.A;
 		ex_mem.B = id_ex.B;
-		lock_RAM[ex_mem.ALUoutput]++;
 		delay = 3;
 	}
 
@@ -498,7 +494,7 @@ void Node::work_EX() { // 执行/有效地址
 		else if (id_ex.command_type == BGEU)
 			ex_mem.cond = ((unsigned)id_ex.A >= (unsigned)id_ex.B);
 
-		printf("A = %d  B = %d  cond = %d\n", id_ex.A, id_ex.B, (int)ex_mem.cond);
+		// printf("A = %d  B = %d  cond = %d\n", id_ex.A, id_ex.B, (int)ex_mem.cond);
 	}
 
 	else if (id_ex.command_t == U) {
@@ -509,7 +505,7 @@ void Node::work_EX() { // 执行/有效地址
 	}
 
 	else if (id_ex.command_t == J) {
-		printf("JAL!\n");
+		// printf("JAL!\n");
 		ex_mem.ALUoutput = id_ex.npc + id_ex.imm - 4;
 		ex_mem.imm = id_ex.npc;
 		ex_mem.cond = true;
@@ -522,19 +518,14 @@ void Node::work_EX() { // 执行/有效地址
 void Node::work_MEM() { // 存储器访问
 
 	if (!ex_mem.ir || mem_wb.ir) {
-		printf("mem passed");
+		/*printf("mem passed");
 		if (!ex_mem.ir)
 			printf(" (no input)");
 		if (mem_wb.ir)
 			printf(" (mem_wb is full)");
-		printf("\n");
+			printf("\n");*/
 		locks++;
 		return;
-	}
-
-	if (ex_mem.command_t == I && (ex_mem.command_type == LB || ex_mem.command_type == LH || ex_mem.command_type == LW || ex_mem.command_type == LBU || ex_mem.command_type == LHU)) {
-		if (lock_RAM[ex_mem.ALUoutput])
-			return;
 	}
 
 	mem_wb.ir = ex_mem.ir;
@@ -558,9 +549,12 @@ void Node::work_MEM() { // 存储器访问
 
 		else if (ex_mem.command_type == LHU)
 			mem_wb.lmd = read_u16(RAM + ex_mem.ALUoutput);
+		/*if (ex_mem.command_type == LW)
+		  printf("load!!! pc = 0x%x  address = 0x%x  value = %d\n", ex_mem.npc - 4, ex_mem.ALUoutput, mem_wb.lmd);*/
 	}
 
 	else if (ex_mem.command_t == S) {
+		// printf("store??? pc = 0x%x  address = 0x%x, value = %d\n", ex_mem.npc - 4, ex_mem.ALUoutput, ex_mem.B);
 		if (ex_mem.command_type == SB)
 			write_8(RAM + ex_mem.ALUoutput, ex_mem.B);
 
@@ -569,8 +563,6 @@ void Node::work_MEM() { // 存储器访问
 		
 		else if (ex_mem.command_type == SW)
 			write_32(RAM + ex_mem.ALUoutput, ex_mem.B);
-
-		lock_RAM[ex_mem.ALUoutput]--;
 	}
 
 	ex_mem.ir = 0;
@@ -582,13 +574,14 @@ void Node::work_MEM() { // 存储器访问
 void Node::work_WB() { // 写回
 
 	if (!mem_wb.ir) {
-		printf("wb passed\n");
+		// printf("wb passed\n");
 		locks++;
 		return;
 	}
 
 	int rd = get_rd(mem_wb.ir);
 	if (rd) {
+		// printf("WB pc = 0x%x\n", mem_wb.npc - 4);
 		// if (lock[rd]) return;
 		if (mem_wb.command_t == R) {
 			reg[rd] = mem_wb.ALUoutput;
@@ -600,6 +593,7 @@ void Node::work_WB() { // 写回
 			if (mem_wb.command_type == LB || mem_wb.command_type == LH || mem_wb.command_type == LW || mem_wb.command_type == LBU || mem_wb.command_type == LHU) {
 				reg[rd] = mem_wb.lmd;
 				lock[rd]--;
+				// printf("load!!! reg[rd] = %d\n", reg[rd]);
 			}
 
 			else if (mem_wb.command_type == JALR) {
@@ -610,7 +604,6 @@ void Node::work_WB() { // 写回
 			else {
 				reg[rd] = mem_wb.ALUoutput;
 				lock[rd]--;
-				printf("reg[rd] = %d\n", reg[rd]);
 			}
 		}
 
@@ -619,7 +612,7 @@ void Node::work_WB() { // 写回
 			if (mem_wb.command_type == LUI) {
 				reg[rd] = mem_wb.imm;
 				lock[rd]--;
-				printf("reg[rd] = %d\n", reg[rd]);
+				// printf("reg[rd] = %d\n", reg[rd]);
 			}
 
 			else if (mem_wb.command_type == AUIPC) {

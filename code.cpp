@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cassert>
 
 #include "tools.hpp"
 #include "main.hpp"
@@ -29,24 +30,25 @@ int main() {
 	}
 	for (;;) {
 		// printf("pc = 0x%x\n", pc);
-		getchar();
+		// getchar();
 		locks = 0;
-		printf("%08x %08x %08x %08x", if_id.ir, id_ex.ir, ex_mem.ir, mem_wb.ir);
-		printf("mem_wb.rd = %d pc = 0x%x\n", get_rd(mem_wb.ir), mem_wb.npc - 4);
+		// printf("%08x %08x %08x %08x", if_id.ir, id_ex.ir, ex_mem.ir, mem_wb.ir);
+		// printf("mem_wb.rd = %d pc = 0x%x\n", get_rd(mem_wb.ir), mem_wb.npc - 4);
 		WB.work_WB();
-		printf("ex_mem.rd = %d pc = 0x%x\n", get_rd(ex_mem.ir), ex_mem.npc - 4);
+		// printf("ex_mem.rd = %d pc = 0x%x\n", get_rd(ex_mem.ir), ex_mem.npc - 4);
 		MEM.work_MEM();
-		printf("id_ex.rd = %d pc = 0x%x\n", get_rd(id_ex.ir), id_ex.npc - 4);
+		// printf("id_ex.rd = %d pc = 0x%x\n", get_rd(id_ex.ir), id_ex.npc - 4);
 		EX.work_EX();
-		printf("if_id.rd = %d pc = 0x%x\n", get_rd(if_id.ir), if_id.npc - 4);
+		// printf("if_id.rd = %d pc = 0x%x\n", get_rd(if_id.ir), if_id.npc - 4);
 		if (ID.work_ID())
 			break;
 		IF.work_IF();
-		disp();
+		// disp();
 		if (locks == 5) {
 			printf("Fuck you!\n");
 			for (;;);
 		}
+		assert(!reg[0]);
 	}
 	WB.work_WB();
 	MEM.work_MEM();
