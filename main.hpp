@@ -269,8 +269,6 @@ bool Node::work_ID() { // 指令译码/寄存器提取
 	}
 
 	if_id.ir = 0;
-	
-	check(id_ex.command_type);
 
 	return false;
 }
